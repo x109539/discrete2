@@ -95,7 +95,7 @@ case object Function2 {
     fetchData(url, apiKey)
   }
 
-
+//Used to get data from the specified API.
   def fetchData(url: String, apiKey: String): String = {
     val connection = new URL(url).openConnection.asInstanceOf[HttpURLConnection]
     connection.setRequestMethod("GET")
@@ -119,7 +119,7 @@ case object Function2 {
     }
   }
 
-
+//Used to write data to a file.
   def writeDataToFile(data: String, fileName: String): Unit = {
     val json: JsValue = Json.parse(data)
     val records = (json \ "data").as[Seq[JsValue]].map { record =>
@@ -130,8 +130,6 @@ case object Function2 {
       s"$formattedTime,$value"
 
     }
-
-
     val header = "Time,Value\n"
     val csvContent = header + records.mkString("\n")
     val writer = new PrintWriter(fileName)
@@ -139,7 +137,7 @@ case object Function2 {
     writer.close()
   }
 
-
+//Parses the user's selection and returns the corresponding time interval and statistical function.
   def parseUserChoices(aggregationChoice: Int, measurementChoice: Int): (String, Seq[Double] => Double) = {
     val interval = aggregationChoice match {
       case 1 => "original"
@@ -148,8 +146,6 @@ case object Function2 {
       case 4 => "weekly"
       case 5 => "monthly"
     }
-
-
     val statFunc: Seq[Double] => Double = measurementChoice match {
       case 1 => data: Seq[Double] => data.sum / data.length // Mean
       case 2 => data: Seq[Double] => {
@@ -165,7 +161,7 @@ case object Function2 {
     (interval, statFunc)
   }
 
-
+//It is used to process data and write the processed data to a file.
   def processDataAndWriteToFile(data: String, fileName: String, interval: String, statFunc: Seq[Double] => Double): Unit = {
     val json: JsValue = Json.parse(data)
     val records = (json \ "data").as[Seq[JsValue]]
