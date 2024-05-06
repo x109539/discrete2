@@ -6,8 +6,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import scala.io.StdIn.readLine
 
+
 case object Function2 {
-  def function2(args: Array[String]): Unit = {
+  def function2 (args: Array[String]): Unit = {
     // API details map
     val apiDetails = List(
       "wind" -> "181",
@@ -17,11 +18,13 @@ case object Function2 {
       "consumption" -> "193"
     )
 
+
     // Get user input for start and end time
     println("Please enter the start time (YYYY-MM-DDTHH:MM:SSZ):")
     val startTime = readLine()
     println("Please enter the end time (YYYY-MM-DDTHH:MM:SSZ):")
     val endTime = readLine()
+
 
     // Choose time interval
     println("Do you want to aggregate the data? Choose one of the following:")
@@ -31,6 +34,7 @@ case object Function2 {
     println("4. Weekly")
     println("5. Monthly")
     val aggregationChoice = readLine().toInt
+
 
     // Define time interval and statistical function based on user choice
     var interval = ""
@@ -46,41 +50,51 @@ case object Function2 {
       statFunc = results._2
     }
 
-    // Recursive function to select API
-    def selectApi(apiIndex: Int = 0): Unit = {
-      if (apiIndex < apiDetails.length) {
-        val selectedApi = apiDetails(apiIndex)._1
 
-        // Fetch data for the selected API
-        val apiKey = "f775993eb01747438015e4f25ec7041b"
-        val data = fetchData(apiDetails(apiIndex)._2, startTime, endTime, apiKey)
+    // Loop for selecting API
+    var continueSelecting = true
+    while (continueSelecting) {
+      // Get user input for API selection
+      println("Please select an API:")
+      apiDetails.zipWithIndex.foreach { case ((api, _), index) =>
+        println(s"${index + 1}. $api")
+      }
+      val selectedApiIndex = readLine().toInt
+      val selectedApi = apiDetails(selectedApiIndex - 1)._1
 
-        // Write data to CSV file
-        val desktopPath = Paths.get(System.getProperty("user.home"), "Desktop").toString
-        val fileName = s"$desktopPath/energy_data_${selectedApi}_$interval.csv"
-        if (aggregationChoice == 1) {
-          writeDataToFile(data, fileName)
-        } else {
-          processDataAndWriteToFile(data, fileName, interval, statFunc)
-        }
-        println(s"Data for $selectedApi has been written to $fileName")
 
-        // Ask user if they want to continue selecting API
-        println("Do you want to select another API? (yes/no)")
-        val continueInput = readLine()
-        if (continueInput.toLowerCase == "yes") selectApi(apiIndex + 1) // Recursive call if user wants to continue
+      // Fetch data for the selected API
+      val apiKey = "f775993eb01747438015e4f25ec7041b"
+      val data = fetchData(apiDetails(selectedApiIndex - 1)._2, startTime, endTime, apiKey)
+
+
+      // Write data to CSV file
+      val desktopPath = Paths.get(System.getProperty("user.home"), "Desktop").toString
+      val fileName = s"$desktopPath/energy_data_${selectedApi}_$interval.csv"
+      if (aggregationChoice == 1) {
+        writeDataToFile(data, fileName)
+      } else {
+        processDataAndWriteToFile(data, fileName, interval, statFunc)
+      }
+      println(s"Data for $selectedApi has been written to $fileName")
+
+
+      // Ask user if they want to continue selecting API
+      println("Do you want to select another API? (yes/no)")
+      val continueInput = readLine()
+      if (continueInput.toLowerCase != "yes") {
+        continueSelecting = false
       }
     }
-
-    // Start selecting API
-    selectApi()
   }
 
+
   def fetchData(datasetId: String, startTime: String, endTime: String, apiKey: String): String = {
-    val pageSize = 20000
+    val pageSize=20000
     val url = s"https://data.fingrid.fi/api/datasets/$datasetId/data?startTime=$startTime&endTime=$endTime&pageSize=$pageSize"
     fetchData(url, apiKey)
   }
+
 
   def fetchData(url: String, apiKey: String): String = {
     val connection = new URL(url).openConnection.asInstanceOf[HttpURLConnection]
@@ -88,25 +102,23 @@ case object Function2 {
     connection.setRequestProperty("x-api-key", apiKey)
     val responseCode = connection.getResponseCode
 
+
     if (responseCode == 200) {
       val inputStream = connection.getInputStream
       val bufferedReader = new BufferedReader(new InputStreamReader(inputStream))
-      readLines(bufferedReader, new StringBuilder).toString
+      val response = new StringBuilder
+      var inputLine = bufferedReader.readLine()
+      while (inputLine != null) {
+        response.append(inputLine)
+        inputLine = bufferedReader.readLine()
+      }
+      bufferedReader.close()
+      response.toString
     } else {
       s"Error: $responseCode"
     }
   }
 
-  def readLines(bufferedReader: BufferedReader, response: StringBuilder): StringBuilder = {
-    val inputLine = bufferedReader.readLine()
-    if (inputLine != null) {
-      response.append(inputLine)
-      readLines(bufferedReader, response)
-    } else {
-      bufferedReader.close()
-      response
-    }
-  }
 
   def writeDataToFile(data: String, fileName: String): Unit = {
     val json: JsValue = Json.parse(data)
@@ -116,7 +128,9 @@ case object Function2 {
       val formattedTime = LocalDateTime.parse(endTime, DateTimeFormatter.ISO_DATE_TIME)
         .format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"))
       s"$formattedTime,$value"
+
     }
+
 
     val header = "Time,Value\n"
     val csvContent = header + records.mkString("\n")
@@ -124,6 +138,7 @@ case object Function2 {
     writer.write(csvContent)
     writer.close()
   }
+
 
   def parseUserChoices(aggregationChoice: Int, measurementChoice: Int): (String, Seq[Double] => Double) = {
     val interval = aggregationChoice match {
@@ -133,6 +148,7 @@ case object Function2 {
       case 4 => "weekly"
       case 5 => "monthly"
     }
+
 
     val statFunc: Seq[Double] => Double = measurementChoice match {
       case 1 => data: Seq[Double] => data.sum / data.length // Mean
@@ -148,6 +164,7 @@ case object Function2 {
     }
     (interval, statFunc)
   }
+
 
   def processDataAndWriteToFile(data: String, fileName: String, interval: String, statFunc: Seq[Double] => Double): Unit = {
     val json: JsValue = Json.parse(data)
@@ -182,12 +199,15 @@ case object Function2 {
     writer.close()
   }
 
+
+
   def aggregateByHour(timeValues: Seq[(String, Double)]): Map[String, Seq[Double]] = {
     timeValues.groupBy { case (time, _) =>
       LocalDateTime.parse(time, DateTimeFormatter.ISO_DATE_TIME)
         .format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")).substring(0, 13) // Group by hour
     }.mapValues(_.map(_._2).toList).toMap
   }
+
 
   def aggregateByDay(timeValues: Seq[(String, Double)]): Map[String, Seq[Double]] = {
     timeValues.groupBy { case (time, _) =>
@@ -210,4 +230,7 @@ case object Function2 {
         .format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")).substring(0, 7) // Group by month
     }.mapValues(_.map(_._2).toList).toMap
   }
+
+
+
 }
