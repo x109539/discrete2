@@ -7,7 +7,7 @@ import org.knowm.xchart.style.markers.SeriesMarkers
 import scala.annotation.tailrec
 import scala.io.StdIn.readLine
 
-case object Function3 {
+case object Function3 {//Implement a system that can read the energy data in CSV file and draw the corresponding chart according to the date-time format provided by the user.
 
   case class EnergyRecord(time: LocalDateTime, value: Double)
 
@@ -51,10 +51,12 @@ case object Function3 {
     new SwingWrapper(chart).displayChart()
   }
 
-  @tailrec
+  @tailrec //Represents tail recursion.
   def runFunction3(): Unit = {
+    //Prompts the user to enter the path to the CSV file and splits the path into an array
     println("Enter file paths separated by commas (e.g., C:\\path1.csv,C:\\path2.csv):")
     val inputPaths = readLine().split(",").map(_.trim)
+    
     val dataSets = inputPaths.flatMap { path =>
       println(s"Enter date time format for file $path:")
       val dateTimeFormat = readLine().trim
@@ -81,7 +83,7 @@ case object Function3 {
       }
       processCommands()
     } else {
-      println("No valid data sets found.")
+      println("No valid data sets found.")//error management
     }
 
     println("Do you want to continue? (yes/no)")
